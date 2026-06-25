@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "DeLinked",
+    "version": "1.0",
+    "description": "Get rid of the timeline in LinkedIn (Mostly AI generated slop)",
+    "icons": {
+        "48": "icons/icon-48.png"
+    },
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": "icons/icon-48.png"
+    },
+    "permissions": ["activeTab", "scripting", "storage"],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "js": ["scripts/content.js"],
+            "matches": ["https://*.linkedin.com/*"]
+        }
+    ]
+}
