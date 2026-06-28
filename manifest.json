@@ -17,6 +17,7 @@
     "content_scripts": [
         {
             "js": ["scripts/content.js"],
+            "css": ["styles/debullshitify.css"],
             "matches": ["https://*.linkedin.com/*"]
         }
     ]

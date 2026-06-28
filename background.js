@@ -1,49 +1,99 @@
-const hideTimelineCss = `
-#workspace > div > div > section > div {
-    display: none
-}
+const HIDE_TIMELINE_CSS = `
+  #workspace > div > div > section > div {
+      display: none !important;
+  }
 `;
 
-chrome.runtime.onMessage.addListener((message) => {
+// Unified Message Router
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "toggleTimeline") {
-        (async () => {
-            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            const currentTabId = tabs[0].id;
-
-            const result = await chrome.storage.local.get(["timelineState"]);
-
-            const currentState = result.timelineState || "shown";
-
-            if (currentState === "shown") {
-                await chrome.scripting.insertCSS({
-                    css: hideTimelineCss,
-                    target: { tabId: currentTabId },
-                });
-                await chrome.storage.local.set({ timelineState: "hidden" });
-            } else {
-                await chrome.scripting.removeCSS({
-                    css: hideTimelineCss,
-                    target: { tabId: currentTabId },
-                });
-                await chrome.storage.local.set({ timelineState: "shown" });
-            }
-        })();
+        handleToggleTimeline();
+    } else if (message.action === "cleanText") {
+        deBullshitifyWithGemini(message.text, sendResponse);
+        return true; // Keep channel open for async fetch
     }
 });
 
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (changeInfo.status === "complete") {
-        const result = await chrome.storage.local.get(["timelineState"]);
+// Asynchronous handler for Gemini API
+async function deBullshitifyWithGemini(text, sendResponse) {
+    if (!text) {
+        sendResponse({ cleanedText: "" });
+        return;
+    }
 
-        if (result.timelineState === "hidden") {
-            try {
-                await chrome.scripting.insertCSS({
-                    css: hideTimelineCss,
-                    target: { tabId: tabId },
-                });
-            } catch (err) {
-                console.error("Failed to inject CSS on reload:", err);
-            }
+    // Fetch the user's custom API key out of extension storage dynamically
+    const { geminiApiKey } = await chrome.storage.local.get(["geminiApiKey"]);
+
+    if (!geminiApiKey) {
+        sendResponse({ cleanedText: "⚠️ Please enter your Gemini API Key inside the extension popup window first." });
+        return;
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+
+    const requestBody = {
+        contents: [
+            {
+                parts: [
+                    {
+                        text: `You are the core backend engine for "Debullshitify", a cynical, uncompromising, and highly aggressive translator of LinkedIn posts. 
+
+Your objective: Ruthlessly strip away all corporate fluff, artificial humility, excessive emoji spam, and puffed-up metric bragging meant to sound smart. Penetrate right through the corporate veneer and guess the raw, unvarnished, human truth the poster actually had in mind before they filtered it through LinkedIn culture. Give us the unpolished reality, but preserve the actual core facts, context, or real substance of what they are sharing so we don't lose the plot.
+
+Output rules:
+1. Provide ONLY the final translation. Do not include any intro/outro phrases.
+2. Use strict plain text. Do NOT use any markdown formatting like asterisks for bolding, bullet points, or headers. 
+3. Be brutally direct and straight to the point.
+
+Translate this LinkedIn post:
+"${text}"`
+                    },
+                ],
+            },
+        ],
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        const data = await response.json();
+
+        // Error checking in case the key is invalid or unauthorized
+        if (data.error) {
+            sendResponse({ cleanedText: `⚠️ API Error: ${data.error.message}` });
+            return;
         }
+
+        const cleanedText = data.candidates[0].content.parts[0].text.trim();
+        sendResponse({ cleanedText: cleanedText });
+    } catch (err) {
+        console.error("Gemini API Error:", err);
+        sendResponse({ cleanedText: "⚠️ Failed to connect to Gemini API." });
     }
-});
+}
+
+// Logic Handlers
+async function handleToggleTimeline() {
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab) return;
+        const { timelineState } = await chrome.storage.local.get(["timelineState"]);
+        const isCurrentlyShown = !timelineState || timelineState === "shown";
+
+        if (isCurrentlyShown) {
+            await chrome.scripting.insertCSS({ css: HIDE_TIMELINE_CSS, target: { tabId: tab.id } });
+            await chrome.storage.local.set({ timelineState: "hidden" });
+        } else {
+            await chrome.scripting.removeCSS({ css: HIDE_TIMELINE_CSS, target: { tabId: tab.id } });
+            await chrome.storage.local.set({ timelineState: "shown" });
+        }
+    } catch (err) {
+        console.error("Error toggling timeline state:", err);
+    }
+}

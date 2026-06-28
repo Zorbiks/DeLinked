@@ -1,0 +1,73 @@
+/* Base Button Styling */
+.delinked-debullshitify-btn {
+    background: none;
+    border: 1px solid rgba(255, 71, 87, 0.2); /* Soft red border to define shape */
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    padding: 0 12px; /* Increased padding slightly for balance */
+    margin-inline-start: 8px;
+    height: 32px;
+    border-radius: 16px; /* Pill shape matches LinkedIn's native action design */
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(1);
+}
+
+/* Hover State */
+.delinked-debullshitify-btn:hover {
+    background-color: rgba(255, 71, 87, 0.08); /* Fades a tint of your brand red */
+    border-color: #ff4757;
+}
+
+/* ⚡ NEW: Active Press State (Tactile feedback) */
+.delinked-debullshitify-btn:active {
+    transform: scale(0.94); /* Physically shrinks slightly when pressed down */
+    background-color: rgba(255, 71, 87, 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+    .delinked-debullshitify-btn {
+        border-color: rgba(255, 71, 87, 0.3);
+    }
+    .delinked-debullshitify-btn:hover {
+        background-color: rgba(255, 71, 87, 0.15);
+    }
+    .delinked-debullshitify-btn:active {
+        background-color: rgba(255, 71, 87, 0.25);
+    }
+}
+
+/* Text Element */
+.delinked-btn-text {
+    color: #ff4757;
+    font-weight: 700;
+    font-size: 1.4rem;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ⚡ NEW: Loading State CSS Spinner */
+.delinked-debullshitify-btn.is-loading {
+    pointer-events: none; /* Stops multiple accidental double clicks */
+    opacity: 0.75;
+}
+
+.delinked-debullshitify-btn.is-loading .delinked-btn-text::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ff4757;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: button-spin 0.6s linear infinite;
+}
+
+@keyframes button-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
