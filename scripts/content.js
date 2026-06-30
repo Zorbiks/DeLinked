@@ -8,95 +8,140 @@ function injectDebullshitifyToActionBar() {
     `);
 
     sendAnchors.forEach((sendBtn) => {
-        // Avoid double injection
         if (sendBtn.nextElementSibling && sendBtn.nextElementSibling.classList.contains("delinked-debullshitify-btn")) {
             return;
         }
 
-        // Create the button
         const debullshitActionBtn = document.createElement("button");
         debullshitActionBtn.type = "button";
         debullshitActionBtn.className = "delinked-debullshitify-btn";
         debullshitActionBtn.innerHTML = `<span class="delinked-btn-text">Debullshitify</span>`;
+        debullshitActionBtn.dataset.state = "original";
 
-        // Handle click
         debullshitActionBtn.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
 
-            // If already loading, ignore
             if (debullshitActionBtn.classList.contains("is-loading")) return;
 
+            const state = debullshitActionBtn.dataset.state;
+
             // Find the post card
-            const postCard = sendBtn.closest('[role="listitem"]') ||
-                             sendBtn.closest('[role="article"]') ||
-                             sendBtn.closest("[data-urn]") ||
-                             sendBtn.closest(".beb12872");
+            const postCard =
+                sendBtn.closest('[role="listitem"]') ||
+                sendBtn.closest('[role="article"]') ||
+                sendBtn.closest("[data-urn]") ||
+                sendBtn.closest(".beb12872");
 
             if (!postCard) {
-                console.warn("Could not find the post card container.");
+                console.warn("DeLinked: Could not find the post card container.");
                 return;
             }
 
             // Find the text container
-            let textContainer = postCard.querySelector('[data-testid="expandable-text-box"]');
-            if (!textContainer) {
-                textContainer = postCard.querySelector('.feed-shared-update-v2__description .update-components-text');
-            }
-            if (!textContainer) {
-                textContainer = postCard.querySelector('.feed-shared-inline-show-more-text .update-components-text');
-            }
+            const getTextContainer = () =>
+                postCard.querySelector('[data-testid="expandable-text-box"]') ||
+                postCard.querySelector(".feed-shared-update-v2__description .update-components-text") ||
+                postCard.querySelector(".feed-shared-inline-show-more-text .update-components-text");
 
-            if (!textContainer) {
-                console.warn("Target text box container not found inside this post card.");
-                return;
-            }
-
-            // Extract original text (strip "more" button text if inside)
-            let originalText = textContainer.innerText.trim();
-            const moreBtnInside = textContainer.querySelector('[data-testid="expandable-text-button"]');
-            if (moreBtnInside) {
-                originalText = originalText.replace(moreBtnInside.innerText, "").trim();
-            }
-
-            if (!originalText) {
-                console.warn("No text found to debullshitify.");
-                return;
-            }
-
-            // Add loading state
-            debullshitActionBtn.classList.add("is-loading");
-            // Disable the button visually (already via pointer-events:none in CSS)
-            // But we also want to prevent double clicks, which is already handled.
-
-            // Send to background
-            chrome.runtime.sendMessage({ action: "cleanText", text: originalText }, (response) => {
-                // Remove loading state regardless of success/failure
-                debullshitActionBtn.classList.remove("is-loading");
-
-                if (response && response.cleanedText) {
-                    textContainer.textContent = response.cleanedText;
-                } else {
-                    // Optionally show a temporary error message or just log
-                    console.warn("Debullshitify failed or returned no text.");
-                    // Could also set textContainer.textContent = "⚠️ Error: ..." but keep it simple
+            
+            // Restore the original HTML back
+            if (state === "debullshitified") {
+                const originalHtml = debullshitActionBtn.dataset.originalHtml;
+                if (originalHtml) {
+                    const textContainer = getTextContainer();
+                    if (textContainer) {
+                        // Restore the full original DOM
+                        textContainer.innerHTML = originalHtml;
+                        debullshitActionBtn.dataset.state = "original";
+                        debullshitActionBtn.innerHTML = `<span class="delinked-btn-text">Debullshitify</span>`;
+                        debullshitActionBtn.classList.remove("is-restore");
+                    }
                 }
-            });
+                return;
+            }
+
+            // Debullshitify
+            const textContainer = getTextContainer();
+            if (!textContainer) {
+                console.warn("DeLinked: Text container not found inside this post card.");
+                return;
+            }
+
+            // Save the full original innerHTML so we always have the real original to restore to
+            debullshitActionBtn.dataset.originalHtml = textContainer.innerHTML;
+
+            // Check if the post is truncated ("... more" button present).
+            const moreBtn = textContainer.querySelector('[data-testid="expandable-text-button"]');
+            const isTruncated = !!moreBtn;
+
+            // Extract clean text from a container and remove the "more" button
+            // so it never leaks into the AI prompt
+            const extractText = (container) => {
+                const clone = container.cloneNode(true);
+                const moreBtnClone = clone.querySelector('[data-testid="expandable-text-button"]');
+                if (moreBtnClone) moreBtnClone.remove();
+                return clone.textContent.trim();
+            };
+
+            // The function that reads text, calls AI, and swaps content
+            const processText = () => {
+                const liveContainer = getTextContainer();
+                if (!liveContainer) {
+                    console.warn("DeLinked: Container disappeared before processing.");
+                    debullshitActionBtn.classList.remove("is-loading");
+                    return;
+                }
+
+                const fullText = extractText(liveContainer);
+                if (!fullText) {
+                    console.warn("DeLinked: No text found to debullshitify.");
+                    debullshitActionBtn.classList.remove("is-loading");
+                    return;
+                }
+
+                chrome.runtime.sendMessage({ action: "cleanText", text: fullText }, (response) => {
+                    debullshitActionBtn.classList.remove("is-loading");
+
+                    if (response && response.cleanedText) {
+                        const finalContainer = getTextContainer();
+                        if (finalContainer) {
+                            // Replace the entire inner content with the cleaned text
+                            finalContainer.textContent = response.cleanedText;
+                        }
+                        debullshitActionBtn.dataset.state = "debullshitified";
+                        debullshitActionBtn.innerHTML = `<span class="delinked-btn-text">Restore</span>`;
+                        debullshitActionBtn.classList.add("is-restore");
+                    } else {
+                        console.warn("DeLinked: API returned no text.");
+                        // Restore original HTML so the post isn't left in a broken state
+                        const fallbackContainer = getTextContainer();
+                        if (fallbackContainer && debullshitActionBtn.dataset.originalHtml) {
+                            fallbackContainer.innerHTML = debullshitActionBtn.dataset.originalHtml;
+                        }
+                    }
+                });
+            };
+
+            debullshitActionBtn.classList.add("is-loading");
+
+            if (isTruncated) {
+                // Click the "more" button so LinkedIn reveals the full text in the DOM,
+                // then wait a tick for the DOM update before reading.
+                moreBtn.click();
+                setTimeout(processText, 400);
+            } else {
+                processText();
+            }
         });
 
-        // Place the button next to the "Send" button
         sendBtn.insertAdjacentElement("afterend", debullshitActionBtn);
     });
 }
 
-// Observer and initial run
 const observer = new MutationObserver(() => {
     injectDebullshitifyToActionBar();
 });
 
-observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-});
-
+observer.observe(document.body, { childList: true, subtree: true });
 injectDebullshitifyToActionBar();

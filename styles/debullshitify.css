@@ -1,29 +1,27 @@
 /* Base Button Styling */
 .delinked-debullshitify-btn {
     background: none;
-    border: 1px solid rgba(255, 71, 87, 0.2); /* Soft red border to define shape */
+    border: 1px solid rgba(255, 71, 87, 0.2);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-family: inherit;
-    padding: 0 12px; /* Increased padding slightly for balance */
+    padding: 0 12px;
     margin-inline-start: 8px;
     height: 32px;
-    border-radius: 16px; /* Pill shape matches LinkedIn's native action design */
+    border-radius: 16px;
     transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     transform: scale(1);
 }
 
-/* Hover State */
 .delinked-debullshitify-btn:hover {
-    background-color: rgba(255, 71, 87, 0.08); /* Fades a tint of your brand red */
+    background-color: rgba(255, 71, 87, 0.08);
     border-color: #ff4757;
 }
 
-/* ⚡ NEW: Active Press State (Tactile feedback) */
 .delinked-debullshitify-btn:active {
-    transform: scale(0.94); /* Physically shrinks slightly when pressed down */
+    transform: scale(0.94);
     background-color: rgba(255, 71, 87, 0.16);
 }
 
@@ -31,15 +29,16 @@
     .delinked-debullshitify-btn {
         border-color: rgba(255, 71, 87, 0.3);
     }
+
     .delinked-debullshitify-btn:hover {
         background-color: rgba(255, 71, 87, 0.15);
     }
+
     .delinked-debullshitify-btn:active {
         background-color: rgba(255, 71, 87, 0.25);
     }
 }
 
-/* Text Element */
 .delinked-btn-text {
     color: #ff4757;
     font-weight: 700;
@@ -50,9 +49,8 @@
     gap: 6px;
 }
 
-/* ⚡ NEW: Loading State CSS Spinner */
 .delinked-debullshitify-btn.is-loading {
-    pointer-events: none; /* Stops multiple accidental double clicks */
+    pointer-events: none;
     opacity: 0.75;
 }
 
@@ -69,5 +67,38 @@
 @keyframes button-spin {
     to {
         transform: rotate(360deg);
+    }
+}
+
+/* Restore state */
+.delinked-debullshitify-btn.is-restore {
+    border-color: #0073b1;
+}
+
+.delinked-debullshitify-btn.is-restore .delinked-btn-text {
+    color: #0073b1;
+}
+
+.delinked-debullshitify-btn.is-restore:hover {
+    background-color: rgba(0, 115, 177, 0.08);
+    border-color: #0073b1;
+}
+
+.delinked-debullshitify-btn.is-restore:active {
+    background-color: rgba(0, 115, 177, 0.16);
+    transform: scale(0.94);
+}
+
+@media (prefers-color-scheme: dark) {
+    .delinked-debullshitify-btn.is-restore {
+        border-color: rgba(0, 115, 177, 0.5);
+    }
+
+    .delinked-debullshitify-btn.is-restore:hover {
+        background-color: rgba(0, 115, 177, 0.15);
+    }
+
+    .delinked-debullshitify-btn.is-restore:active {
+        background-color: rgba(0, 115, 177, 0.25);
     }
 }
