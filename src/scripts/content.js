@@ -100,7 +100,7 @@ function injectDebullshitifyToActionBar() {
                     return;
                 }
 
-                chrome.runtime.sendMessage({ action: "cleanText", text: fullText }, (response) => {
+                browser.runtime.sendMessage({ action: "cleanText", text: fullText }, (response) => {
                     debullshitActionBtn.classList.remove("is-loading");
 
                     if (response && response.cleanedText) {

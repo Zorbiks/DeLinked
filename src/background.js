@@ -5,7 +5,7 @@ const HIDE_TIMELINE_CSS = `
 `;
 
 // Unified Message Router
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "toggleTimeline") {
         handleToggleTimeline();
     } else if (message.action === "cleanText") {
@@ -22,7 +22,7 @@ async function deBullshitifyWithGemini(text, sendResponse) {
     }
 
     // Fetch the user's custom API key out of extension storage dynamically
-    const { geminiApiKey } = await chrome.storage.local.get(["geminiApiKey"]);
+    const { geminiApiKey } = await browser.storage.local.get(["geminiApiKey"]);
 
     if (!geminiApiKey) {
         sendResponse({ cleanedText: "⚠️ Please enter your Gemini API Key inside the extension popup window first." });
@@ -85,17 +85,17 @@ Translate this LinkedIn post:
 // Logic Handlers
 async function handleToggleTimeline() {
     try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
         if (!tab) return;
-        const { timelineState } = await chrome.storage.local.get(["timelineState"]);
+        const { timelineState } = await browser.storage.local.get(["timelineState"]);
         const isCurrentlyShown = !timelineState || timelineState === "shown";
 
         if (isCurrentlyShown) {
-            await chrome.scripting.insertCSS({ css: HIDE_TIMELINE_CSS, target: { tabId: tab.id } });
-            await chrome.storage.local.set({ timelineState: "hidden" });
+            await browser.scripting.insertCSS({ css: HIDE_TIMELINE_CSS, target: { tabId: tab.id } });
+            await browser.storage.local.set({ timelineState: "hidden" });
         } else {
-            await chrome.scripting.removeCSS({ css: HIDE_TIMELINE_CSS, target: { tabId: tab.id } });
-            await chrome.storage.local.set({ timelineState: "shown" });
+            await browser.scripting.removeCSS({ css: HIDE_TIMELINE_CSS, target: { tabId: tab.id } });
+            await browser.storage.local.set({ timelineState: "shown" });
         }
     } catch (err) {
         console.error("Error toggling timeline state:", err);
