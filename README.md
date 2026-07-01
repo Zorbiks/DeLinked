@@ -1,5 +1,7 @@
 # DeLinked
 
+![DeLinked icon](icon.png)
+
 A Chrome extension that cuts through LinkedIn noise.
 
 ## Motivation
@@ -14,3 +16,6 @@ DeLinked exists to mock them. It lets you block the feed completely, or click th
 2. Go to `chrome://extensions`, enable Developer Mode, and click "Load unpacked".
 3. Select the project folder.
 4. Open the extension popup and paste in your [Gemini API key](https://aistudio.google.com/app/api-keys).
+
+## Screenshot
+![Popup screenshot](popup.png)
