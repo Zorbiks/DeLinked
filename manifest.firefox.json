@@ -3,6 +3,14 @@
     "name": "DeLinked",
     "version": "1.0",
     "description": "A translation tool that replaces verbose corporate marketing with what the author actually means.",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "delinked@zorbiks",
+            "data_collection_permissions": {
+                "required": ["none"]
+            }
+        }
+    },
     "icons": {
         "48": "icons/icon-48.png"
     },
